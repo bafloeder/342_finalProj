@@ -51,8 +51,9 @@ def GaussianPyramid(img, leveln):
 
 def LaplacianPyramid(img, leveln):
     LP = []
-    for i in range(leveln - 1):
-        next_img = cv2.pyrDown(LP[i])
+    for i in range(leveln - 1, 0, -1):
+        print(img.shape[1::-1])
+        next_img = cv2.pyrDown(img)
         LP.append(img - cv2.pyrUp(next_img, img.shape[1::-1]))
         img = next_img
     LP.append(img)
@@ -89,6 +90,7 @@ def multi_band_blending(img1, img2, overlap_w, leveln=None, flag_half=False):
         print("warning: inappropriate number of leveln")
         leveln = max_leveln
 
+    leveln = 6
     # Get Gaussian pyramid and Laplacian pyramid
     MP = GaussianPyramid(mask, leveln)
     LPA = LaplacianPyramid(subA, leveln)

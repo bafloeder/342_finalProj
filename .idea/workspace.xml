@@ -1,11 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="46a31433-4c19-4f7c-9854-1c169f48df13" name="Default" comment="">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.idea/vcs.xml" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/fingerCursor.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/image_stitch.py" />
-    </list>
+    <list default="true" id="46a31433-4c19-4f7c-9854-1c169f48df13" name="Default" comment="" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
     <option name="SHOW_DIALOG" value="false" />

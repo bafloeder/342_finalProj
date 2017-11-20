@@ -32,56 +32,28 @@ class Stitcher:
 		warpedImageA = cv2.warpPerspective(imageA, H,
 			(imageA.shape[1] + imageB.shape[1], imageA.shape[0]))
 
-		result = multi_band_blending.multi_band_blending(imageB, warpedImageA, 30)
+		# result = multi_band_blending.multi_band_blending(imageB, warpedImageA, 30)
 
 
-		# result = warpedImageA
-		# result[0:imageB.shape[0], 0:imageB.shape[1]] = imageB
+		result = warpedImageA
+
+		PercentWidth = 0.95
+		for i in range(imageB.shape[1]):
+			for j in range(imageB.shape[0]):
+				if i >= PercentWidth*imageB.shape[1]:
+					if result[j][i][0] > 0 and result[j][i][1] > 0 and result[j][i][2] > 0:
+						result[j][i] = (0.4*result[j][i] + 0.6*imageB[j][i])
+
+				else:
+					result[j][i] = imageB[j][i]
 
 
 
-		# # Apply Image Pyramids
-		# G = warpedImageA.copy()
-		# gpA = [G]
-		# for i in range(6):
-		# 	G = cv2.pyrDown(gpA[i])
-		# 	gpA.append(G)
-        #
-		# G = imageB.copy()
-		# gpB = [G]
-		# for i in range(6):
-		# 	G = cv2.pyrDown(gpB[i])
-		# 	gpB.append(G)
-        #
-		# lpA = [gpA[5]]
-		# for i in range(5, 0, -1):
-		# 	size = (gpA[i - 1].shape[1], gpA[i - 1].shape[0])
-		# 	GE = cv2.pyrUp(gpA[i], dstsize = size)
-		# 	L = cv2.subtract(gpA[i - 1], GE)
-		# 	lpA.append(L)
-        #
-		# lpB = [gpB[5]]
-		# for i in range(5, 0, -1):
-		# 	size = (gpB[i - 1].shape[1], gpB[i - 1].shape[0])
-		# 	GE = cv2.pyrUp(gpB[i], dstsize = size)
-		# 	L = cv2.subtract(gpB[i - 1], GE)
-		# 	lpB.append(L)
-        #
-		# LS = []
-		# for la, lb in zip(lpA, lpB):
-		# 	rows, cols, dpt = la.shape
-		# 	colsd2 = int(cols/2)
-		# 	ls = np.hstack((la[:, 0:colsd2], lb[:, colsd2:]))
-		# 	LS.append(ls)
-        #
-		# ls_ = LS[0]
-		# for i in range(1, 6):
-		# 	size = (LS[i].shape[1], LS[i].shape[0])
-		# 	print(size)
-		# 	ls_ = cv2.pyrUp(ls_, dstsize = size)
-		# 	ls_ = cv2.add(ls_, LS[i])
-        #
-		# cv2.imwrite('Pyramid_blending2.jpg', ls_)
+
+		result[0:imageB.shape[0], 0:imageB.shape[1]] = imageB
+
+
+
 
 
 
