@@ -3,6 +3,38 @@ import numpy as np
 import imutils
 import cv2
 import multi_band_blending
+import numpy as np
+
+
+def warpTwoImages(img1, img2, H):
+	'''warp img2 to img1 with homograph H'''
+	h1, w1 = img1.shape[:2]
+	h2, w2 = img2.shape[:2]
+	pts1 = np.float32([[0, 0], [0, h1], [w1, h1], [w1, 0]]).reshape(-1, 1, 2)
+	pts2 = np.float32([[0, 0], [0, h2], [w2, h2], [w2, 0]]).reshape(-1, 1, 2)
+	pts2_ = cv2.perspectiveTransform(pts2, H)
+	pts = np.concatenate((pts1, pts2_), axis=0)
+	[xmin, ymin] = np.int32(pts.min(axis=0).ravel() - 0.5)
+	[xmax, ymax] = np.int32(pts.max(axis=0).ravel() + 0.5)
+	t = [-xmin, -ymin]
+	Ht = np.array([[1, 0, t[0]], [0, 1, t[1]], [0, 0, 1]])  # translate
+	result = cv2.warpPerspective(img1, Ht.dot(H), (xmax - xmin, ymax - ymin))
+
+	PercentWidth = 0.95
+	for i in range(img2.shape[1]):
+		for j in range(img2.shape[0]):
+			if i >= PercentWidth * img2.shape[1]:
+				if result[j][i][0] > 0 and result[j][i][1] > 0 and result[j][i][2] > 0:
+					result[j][i] = (0.5 * result[j][i] + 0.5 * img2[j][i])
+
+			else:
+				result[j][i] = img2[j][i]
+
+
+
+
+	# result[t[1]:h1 + t[1], t[0]:w1 + t[0]] = img2
+	return result
 
 class Stitcher:
 	def __init__(self):
@@ -13,13 +45,15 @@ class Stitcher:
 		showMatches=False):
 		# unpack the images, then detect keypoints and extract
 		# local invariant descriptors from them
-		(imageB, imageA) = images
-		(kpsA, featuresA) = self.detectAndDescribe(imageA)
-		(kpsB, featuresB) = self.detectAndDescribe(imageB)
+		(imageLeft, imageMid, imageRight) = images
+		(kpsM, featuresMid) = self.detectAndDescribe(imageMid)
+		(kpsL, featuresLeft) = self.detectAndDescribe(imageLeft)
+		(kpsR, featuresRight) = self.detectAndDescribe(imageRight)
+
 
 		# match features between the two images
-		M = self.matchKeypoints(kpsA, kpsB,
-			featuresA, featuresB, ratio, reprojThresh)
+		M = self.matchKeypoints(kpsL, kpsM,
+			featuresLeft, featuresMid, ratio, reprojThresh)
 
 		# if the match is None, then there aren't enough matched
 		# keypoints to create a panorama
@@ -29,28 +63,35 @@ class Stitcher:
 		# otherwise, apply a perspective warp to stitch the images
 		# together
 		(matches, H, status) = M
-		warpedImageA = cv2.warpPerspective(imageA, H,
-			(imageA.shape[1] + imageB.shape[1], imageA.shape[0]))
-
+		# warpedImageLeft = cv2.warpPerspective(imageLeft, H,
+		# 	(imageLeft.shape[1] + imageMid.shape[1]+2000, imageLeft.shape[0]), flags=cv2.WARP_INVERSE_MAP)
+		warpedImageLeft = warpTwoImages(imageLeft, imageMid, H)
 		# result = multi_band_blending.multi_band_blending(imageB, warpedImageA, 30)
 
+		(kpsM, featuresMid) = self.detectAndDescribe(warpedImageLeft)
 
-		result = warpedImageA
+		M = self.matchKeypoints(kpsR, kpsM,
+			featuresRight, featuresMid, ratio, reprojThresh)
+
+		(matches, H, status) = M
+
+		warpedImageRight = cv2.warpPerspective(imageRight, H, (imageRight.shape[1] + warpedImageLeft.shape[1], imageRight.shape[0]+750))
+
+		result = warpedImageRight
 
 		PercentWidth = 0.95
-		for i in range(imageB.shape[1]):
-			for j in range(imageB.shape[0]):
-				if i >= PercentWidth*imageB.shape[1]:
+		for i in range(warpedImageLeft.shape[1]):
+			for j in range(warpedImageLeft.shape[0]):
+				if i >= PercentWidth*warpedImageLeft.shape[1]:
 					if result[j][i][0] > 0 and result[j][i][1] > 0 and result[j][i][2] > 0:
-						result[j][i] = (0.4*result[j][i] + 0.6*imageB[j][i])
+						result[j][i] = (0.5*result[j][i] + 0.5*warpedImageLeft[j][i])
 
 				else:
-					result[j][i] = imageB[j][i]
+					result[j][i] = warpedImageLeft[j][i]
 
 
 
-
-		result[0:imageB.shape[0], 0:imageB.shape[1]] = imageB
+		# result[0:imageB.shape[0], 0:imageB.shape[1]] = imageB
 
 
 
@@ -60,7 +101,7 @@ class Stitcher:
 
 		# check to see if the keypoint matches should be visualized
 		if showMatches:
-			vis = self.drawMatches(imageA, imageB, kpsA, kpsB, matches,
+			vis = self.drawMatches(imageLeft, imageMid, kpsL, kpsM, matches,
 				status)
 
 			# return a tuple of the stitched image and the
@@ -149,3 +190,4 @@ class Stitcher:
 
 		# return the visualization
 		return vis
+
